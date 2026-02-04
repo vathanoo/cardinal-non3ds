@@ -1,0 +1,313 @@
+<!-- START GENAI -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visa Payment Passkey (VPP) - Merchant Demo</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>">
+    <meta name="description" content="Visa Payment Passkey merchant implementation demo showcasing FIDO2-based authentication for secure payments">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="logo-icon">🔐</span>
+                    <span class="logo-text">VPP Merchant Demo</span>
+                </div>
+                <div class="header-info">
+                    <span class="environment-badge" id="environmentBadge">Sandbox</span>
+                    <div class="user-info" id="userInfo" style="display: none;">
+                        <span id="userEmail"></span>
+                        <button class="btn-logout" onclick="logout()">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <!-- Welcome Section -->
+            <section class="hero" id="welcomeSection">
+                <h1>Visa Payment Passkey Demo</h1>
+                <p class="hero-subtitle">Experience secure, passwordless payments with FIDO2-based authentication</p>
+                
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🔒</div>
+                        <h3>Enhanced Security</h3>
+                        <p>FIDO2-based authentication eliminates passwords and reduces fraud risk</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <h3>Seamless Experience</h3>
+                        <p>Authenticate payments using biometrics or device unlock methods</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">🌍</div>
+                        <h3>Cross-Platform</h3>
+                        <p>Works across all payment channels with a single registration</p>
+                    </div>
+                </div>
+
+                <div class="cta-section">
+                    <button class="btn-primary" onclick="showLoginForm()">Get Started</button>
+                    <button class="btn-secondary" onclick="showDocumentation()">View Documentation</button>
+                </div>
+            </section>
+
+            <!-- Login Form -->
+            <section class="login-section" id="loginSection" style="display: none;">
+                <div class="form-container">
+                    <h2>Merchant Login</h2>
+                    <p>Enter your credentials to start the VPP demo</p>
+                    
+                    <form id="loginForm" onsubmit="handleLogin(event)">
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" name="email" required placeholder="merchant@example.com">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="cardNumber">Visa Card Number</label>
+                            <input type="text" id="cardNumber" name="cardNumber" required 
+                                   placeholder="4111 1111 1111 1111" 
+                                   maxlength="19"
+                                   oninput="formatCardNumber(this)">
+                            <small class="form-help">Enter a valid Visa card number (starts with 4)</small>
+                        </div>
+                        
+                        <button type="submit" class="btn-primary" id="loginBtn">
+                            <span class="btn-text">Login</span>
+                            <span class="btn-spinner" style="display: none;">⟳</span>
+                        </button>
+                    </form>
+                    
+                    <div class="demo-cards">
+                        <h4>Demo Card Numbers:</h4>
+                        <div class="demo-card-list">
+                            <button class="demo-card" onclick="useTestCard('4111111111111111')">
+                                4111 1111 1111 1111 (Visa)
+                            </button>
+                            <button class="demo-card" onclick="useTestCard('4000000000000002')">
+                                4000 0000 0000 0002 (Visa)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Dashboard -->
+            <section class="dashboard" id="dashboardSection" style="display: none;">
+                <h2>VPP Merchant Dashboard</h2>
+                
+                <!-- User Info Panel -->
+                <div class="info-panel">
+                    <div class="panel-header">
+                        <h3>Account Information</h3>
+                        <span class="status-badge status-active">Active</span>
+                    </div>
+                    <div class="panel-content">
+                        <div class="info-item">
+                            <label>Email:</label>
+                            <span id="dashboardEmail"></span>
+                        </div>
+                        <div class="info-item">
+                            <label>Card:</label>
+                            <span id="dashboardCard"></span>
+                        </div>
+                        <div class="info-item">
+                            <label>Session:</label>
+                            <span id="sessionStatus">Active</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VPP Flow Options -->
+                <div class="flow-options">
+                    <div class="flow-card" onclick="startPasskeyRegistration()">
+                        <div class="flow-icon">➕</div>
+                        <h3>Register Passkey</h3>
+                        <p>Create a new payment passkey for your Visa card</p>
+                        <div class="flow-steps">
+                            <span class="step">1. 3DS Challenge</span>
+                            <span class="step">2. Device Binding</span>
+                            <span class="step">3. Passkey Creation</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flow-card" onclick="startPaymentFlow()">
+                        <div class="flow-icon">💳</div>
+                        <h3>Make Payment</h3>
+                        <p>Authenticate a payment using your existing passkey</p>
+                        <div class="flow-steps">
+                            <span class="step">1. Payment Details</span>
+                            <span class="step">2. Passkey Auth</span>
+                            <span class="step">3. Transaction</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Payment Flow -->
+            <section class="payment-flow" id="paymentSection" style="display: none;">
+                <div class="flow-header">
+                    <button class="btn-back" onclick="showDashboard()">← Back to Dashboard</button>
+                    <h2>Payment Flow</h2>
+                </div>
+                
+                <div class="payment-form-container">
+                    <form id="paymentForm" onsubmit="processPayment(event)">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="merchantName">Merchant Name</label>
+                                <input type="text" id="merchantName" value="VPP Demo Store" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="amount">Amount</label>
+                                <input type="number" id="amount" step="0.01" min="0.01" value="25.99" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="currency">Currency</label>
+                                <select id="currency" required>
+                                    <option value="USD">USD - US Dollar</option>
+                                    <option value="EUR">EUR - Euro</option>
+                                    <option value="GBP">GBP - British Pound</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="description">Description</label>
+                                <input type="text" id="description" value="Demo Purchase" required>
+                            </div>
+                        </div>
+                        
+                        <div class="payment-summary">
+                            <h3>Payment Summary</h3>
+                            <div class="summary-item">
+                                <span>Merchant:</span>
+                                <span id="summaryMerchant">VPP Demo Store</span>
+                            </div>
+                            <div class="summary-item">
+                                <span>Amount:</span>
+                                <span id="summaryAmount">$25.99</span>
+                            </div>
+                            <div class="summary-item">
+                                <span>Card:</span>
+                                <span id="summaryCard"></span>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn-primary btn-large" id="paymentBtn">
+                            <span class="btn-text">Pay with Passkey</span>
+                            <span class="btn-spinner" style="display: none;">⟳</span>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Passkey Registration Flow -->
+            <section class="registration-flow" id="registrationSection" style="display: none;">
+                <div class="flow-header">
+                    <button class="btn-back" onclick="showDashboard()">← Back to Dashboard</button>
+                    <h2>Passkey Registration</h2>
+                </div>
+                
+                <div class="registration-steps">
+                    <div class="step-indicator">
+                        <div class="step active" data-step="1">
+                            <div class="step-number">1</div>
+                            <div class="step-label">3DS Challenge</div>
+                        </div>
+                        <div class="step" data-step="2">
+                            <div class="step-number">2</div>
+                            <div class="step-label">Device Verification</div>
+                        </div>
+                        <div class="step" data-step="3">
+                            <div class="step-number">3</div>
+                            <div class="step-label">Passkey Creation</div>
+                        </div>
+                    </div>
+                    
+                    <div class="step-content">
+                        <div class="step-panel active" id="step1Panel">
+                            <h3>3DS Authentication Required</h3>
+                            <p>To create a passkey, you must first complete 3DS authentication with your card issuer.</p>
+                            <button class="btn-primary" onclick="simulate3DSChallenge()">
+                                Start 3DS Challenge
+                            </button>
+                        </div>
+                        
+                        <div class="step-panel" id="step2Panel">
+                            <h3>Device Verification</h3>
+                            <p>Your device is being verified for passkey creation...</p>
+                            <div class="loading-indicator">
+                                <div class="spinner"></div>
+                                <span>Verifying device capabilities...</span>
+                            </div>
+                        </div>
+                        
+                        <div class="step-panel" id="step3Panel">
+                            <h3>Create Your Passkey</h3>
+                            <p>Complete the passkey creation using your device's biometric authentication.</p>
+                            <button class="btn-primary" onclick="createPasskey()">
+                                Create Passkey
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Status Messages -->
+            <div class="status-container" id="statusContainer"></div>
+        </div>
+    </main>
+
+    <!-- VPP Iframe Container -->
+    <div id="vppIframeContainer" style="display: none;">
+        <iframe id="vppIframe" 
+                style="visibility: hidden; height: 0; width: 0;"
+                allow="payment *; publickey-credentials-get *; publickey-credentials-create *"
+                referrerpolicy="strict-origin-when-cross-origin"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation allow-top-navigation-by-user-activation allow-payment allow-modals">
+        </iframe>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>Visa Payment Passkey Demo</h4>
+                    <p>This is a demonstration implementation of Visa Payment Passkey for merchants.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="#" onclick="showDocumentation()">API Documentation</a></li>
+                        <li><a href="https://developer.visa.com" target="_blank">Visa Developer Center</a></li>
+                        <li><a href="/health" target="_blank">System Status</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Environment</h4>
+                    <p>Running in <strong id="footerEnvironment">Sandbox</strong> mode</p>
+                    <p>Version 1.0.0</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="app.js"></script>
+</body>
+</html>
+
+<!-- END GENAI -->
