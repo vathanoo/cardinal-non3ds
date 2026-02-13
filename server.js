@@ -1,5 +1,6 @@
 // START GENAI
 const https = require('https');
+const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const url = require('url');
@@ -465,28 +466,34 @@ const handlePushedAuthorizationRequest = async (req, res) => {
     }
 };
 
-// SSL options - with error handling
+// SSL options - with error handling for local development
 let sslOptions;
-try {
-    sslOptions = {
-        key: fs.readFileSync(path.join(__dirname, 'certs', 'privateKey-d0a286b0-a2e4-4720-9943-52c87b5a7d94.pem')),
-        cert: fs.readFileSync(path.join(__dirname, 'certs', 'cert.pem'))
-    };
-    console.log('✅ SSL certificates loaded successfully');
-    console.log('   Using cert.pem with privateKey-d0a286b0-a2e4-4720-9943-52c87b5a7d94.pem');
-} catch (error) {
-    console.error('❌ FATAL ERROR: Failed to load SSL certificates');
-    console.error('Error details:', error.message);
-    console.error('Expected files:');
-    console.error('  - ' + path.join(__dirname, 'certs', 'privateKey-d0a286b0-a2e4-4720-9943-52c87b5a7d94.pem'));
-    console.error('  - ' + path.join(__dirname, 'certs', 'cert.pem'));
-    console.error('\nPlease ensure SSL certificates exist in the certs directory.');
-    console.error('Server cannot start without SSL certificates.');
-    process.exit(1);
+let useHttps = false;
+
+// Check if we're in production (Render.com handles SSL termination)
+const isProduction = process.env.NODE_ENV === 'production';
+
+if (!isProduction) {
+    try {
+        sslOptions = {
+            key: fs.readFileSync(path.join(__dirname, 'certs', 'privateKey-d0a286b0-a2e4-4720-9943-52c87b5a7d94.pem')),
+            cert: fs.readFileSync(path.join(__dirname, 'certs', 'cert.pem'))
+        };
+        useHttps = true;
+        console.log('✅ SSL certificates loaded successfully');
+        console.log('   Using cert.pem with privateKey-d0a286b0-a2e4-4720-9943-52c87b5a7d94.pem');
+    } catch (error) {
+        console.warn('⚠️  SSL certificates not found - falling back to HTTP');
+        console.warn('   This is OK for production deployment (Render handles SSL)');
+        console.warn('   For local HTTPS, ensure certificates exist in certs/ directory');
+        useHttps = false;
+    }
+} else {
+    console.log('🌐 Production mode - using HTTP (SSL handled by Render.com)');
 }
 
-// Create HTTPS server
-const server = https.createServer(sslOptions, async (req, res) => {
+// Request handler function
+const requestHandler = async (req, res) => {
     const parsedUrl = url.parse(req.url, true);
     const pathname = parsedUrl.pathname;
     const method = req.method;
@@ -575,7 +582,12 @@ const server = https.createServer(sslOptions, async (req, res) => {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Internal Server Error' }));
     }
-});
+};
+
+// Create server (HTTPS for local, HTTP for production)
+const server = useHttps 
+    ? https.createServer(sslOptions, requestHandler)
+    : http.createServer(requestHandler);
 
 // Handle server startup errors
 server.on('error', (error) => {
@@ -599,15 +611,23 @@ server.on('error', (error) => {
 });
 
 server.listen(PORT, () => {
-    console.log(`🚀 VPP Merchant Server running on port ${PORT} (HTTPS)`);
-    console.log(`📱 Access the demo at: https://localhost:${PORT}`);
-    console.log(`🏥 Health check: https://localhost:${PORT}/health`);
+    const protocol = useHttps ? 'HTTPS' : 'HTTP';
+    const url = useHttps ? `https://localhost:${PORT}` : `http://localhost:${PORT}`;
+    
+    console.log(`🚀 VPP Merchant Server running on port ${PORT} (${protocol})`);
+    console.log(`📱 Access the demo at: ${url}`);
+    console.log(`🏥 Health check: ${url}/health`);
     console.log('');
     console.log('🔐 Visa Payment Passkey Demo Ready!');
     console.log('   - Use test card: 4111 1111 1111 1111');
     console.log('   - Demo works without external dependencies');
     console.log('   - Check browser console for VPP flow details');
-    console.log('   - ⚠️  Accept the self-signed certificate in your browser');
+    if (useHttps) {
+        console.log('   - ⚠️  Accept the self-signed certificate in your browser');
+    }
+    if (isProduction) {
+        console.log('   - 🌐 Running in production mode');
+    }
 });
 
 // Handle uncaught exceptions

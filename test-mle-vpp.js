@@ -1,4 +1,3 @@
-// START GENAI
 /**
  * Test script for VPP Message Level Encryption (MLE)
  * This script tests the encryption of PAR request payloads using the server certificate
@@ -69,7 +68,7 @@ async function testMLEEncryption() {
             ],
             scope: "openid",
             state: crypto.randomUUID(),
-            redirect_uri: "http://localhost:3000",
+            redirect_uri: "https://www.example-merchant.com/callback",
             client_assertion: "eyJhbGciOiJSUzI1NiIsInR5cCI6InZuZC52aXNhLmNsaWVudF9jcmVkZW50aWFsK0pXVCIsImtpZCI6InM2QmhkUmtxdDMifQ.eyJhdWQiOlsiaHR0cHM6Ly93d3cudmlzYS5jb20iXSwiaXNzX2tuZCI6IkNMSUVOVF9JRCIsImlzcyI6InM2QmhkUmtxdDMiLCJleHAiOjE3MzY5NTI5NzAsImlhdCI6MTczNjk1Mjg1MCwianRpIjoiYWJjZDEyMzQifQ.signature",
             prompt: "login",
             code_challenge: crypto.randomBytes(32).toString('base64url'),
@@ -183,5 +182,3 @@ if (require.main === module) {
 }
 
 module.exports = { testMLEEncryption };
-
-// END GENAI

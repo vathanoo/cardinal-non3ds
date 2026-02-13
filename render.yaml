@@ -1,0 +1,61 @@
+services:
+  - type: web
+    name: visa-payment-passkey-merchant
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: VPP_ENVIRONMENT
+        sync: false
+      - key: VPP_BASE_URL_SANDBOX
+        value: https://sandbox.auth.visa.com
+      - key: VPP_API_BASE_URL_SANDBOX
+        value: https://sandbox.api.visa.com/passkey
+      - key: VPP_BASE_URL_PROD
+        value: https://auth.visa.com
+      - key: VPP_API_BASE_URL_PROD
+        value: https://api.visa.com/passkey
+      - key: MERCHANT_NAME
+        sync: false
+      - key: MERCHANT_ORIGIN
+        sync: false
+      - key: INTEGRATOR_ORIGIN
+        sync: false
+      - key: VPP_APN
+        sync: false
+      - key: VPP_CLIENT_ID
+        sync: false
+      - key: VPP_CLIENT_VERSION
+        sync: false
+      - key: VPP_PRODUCT_CODE
+        sync: false
+      - key: FIDO2_TIMEOUT
+        value: 360000
+      - key: FIDO2_RP_NAME
+        value: VPP Merchant Demo
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SESSION_TIMEOUT
+        value: 900
+      - key: VDC_API_KEY
+        sync: false
+      - key: VDC_SHARED_SECRET
+        sync: false
+      - key: VDC_USER_ID
+        sync: false
+      - key: VPP_BASIC_AUTH_USERNAME
+        sync: false
+      - key: VPP_BASIC_AUTH_PASSWORD
+        sync: false
+      - key: VPP_REJECT_UNAUTHORIZED
+        value: true
+      - key: DEBUG_MODE
+        value: false
+      - key: LOG_LEVEL
+        value: info
